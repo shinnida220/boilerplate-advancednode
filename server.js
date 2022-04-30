@@ -27,18 +27,33 @@ app.use(passport.session());
 app.set('view engine', 'pug');
 app.set('views', './views/pug');
 
-app.route('/').get((req, res) => {
-  // res.render(process.cwd() + '/views/pug/index', {title: 'Hello', message: 'Please login'});
-  res.render('index', { title: 'Hello', message: 'Please login' });
-});
 
-passport.serializeUser((user, done) => {
-  done(null, user._id);
-});
-passport.deserializeUser((id, done) => {
-  // myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-  done(null, null);
-  // });
+
+myDB(async client => {
+  const myDataBase = await client.db('myFirstDatabase').collection('fccAN_users');
+
+  // Be sure to change the title
+  app.route('/').get((req, res) => {
+    res.render('index', {
+      title: 'Connected to Database',
+      message: 'Please login'
+    });
+  });
+
+  // Serialization and deserialization here...
+  passport.serializeUser((user, done) => {
+    done(null, user._id);
+  });
+  passport.deserializeUser((id, done) => {
+    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
+      done(null, null);
+    });
+  });
+
+}).catch(e => {
+  app.route('/').get((req, res) => {
+    res.render('index', { title: e, message: 'Unable to login' });
+  });
 });
 
 const PORT = process.env.PORT || 3000;
