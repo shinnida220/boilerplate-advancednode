@@ -6,6 +6,7 @@ const fccTesting = require('./freeCodeCamp/fcctesting.js');
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
+const { route } = require('express/lib/application');
 const ObjectID = require('mongodb').ObjectID;
 
 const app = express();
@@ -28,7 +29,12 @@ app.use(passport.session());
 app.set('view engine', 'pug');
 app.set('views', './views/pug');
 
-
+const ensureAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect('/');
+}
 
 myDB(async client => {
   const myDataBase = await client.db('myFirstDatabase').collection('fccAN_users');
@@ -42,10 +48,15 @@ myDB(async client => {
     });
   });
 
-  // Be sure to change the title
   app.route('/login').post(passport.authenticate('local', { failureRedirect: '/' }), (req, res) => {
     res.redirect('/profile');
   });
+
+  app
+    .route('/profile')
+    .get(ensureAuthenticated, (req, res) => {
+      res.render('profile');
+    });
 
   // Serialization and deserialization here...
   passport.serializeUser((user, done) => {
